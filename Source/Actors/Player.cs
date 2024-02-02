@@ -4,7 +4,11 @@ namespace Celeste64;
 /// <summary>
 /// Welcome to the monolithic player class! This time only 2300 lines ;)
 /// </summary>
+#if DEBUG
+public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPointShadow, IHaveUI
+#else 
 public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPointShadow
+#endif
 {
 	#region Constants
 
@@ -2296,4 +2300,46 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	public void Stop() => velocity = Vec3.Zero;
 
 	#endregion
+
+	#region Debug Camera Prints
+
+#if DEBUG
+
+	private static readonly Color HighlightColor = new(0xDAA520); // goldenrod
+
+	public void RenderUI(Batcher batcher, Rect rect)
+	{
+		float lineHeight = Assets.Fonts.First().Value.LineHeight;
+		Vec2 offset = Vec2.Zero;
+		void Print(in string? message = null, bool highlighted = false)
+		{
+			if (!string.IsNullOrEmpty(message))
+				UI.Text(batcher, message, offset, Vec2.Zero, highlighted ? HighlightColor : Color.White);
+			offset.Y += lineHeight;
+		}
+
+		var xy = World.Camera.Forward.XY();
+		Print($"Camera.Forward: {World.Camera.Forward}");
+		Print($"XY: {xy}");
+		Print();
+
+		Print("[Normalized]", highlighted: true);
+		Print($"Extension: {xy.Normalized()}");
+		Print($"Vector2: {Vec2.Normalize(xy)}");
+		Print($"Manual: {xy.ManualNormalize()}");
+		Print();
+
+		var rotationMatrix = Matrix3x2.CreateRotation(MathF.PI / 2);
+		Print("[Rotated 90deg]", highlighted: true);
+		Print($"Extension: {Vec2.Transform(xy.Normalized(), rotationMatrix)}");
+		Print($"Vector2: {Vec2.Transform(Vec2.Normalize(xy), rotationMatrix)}");
+		Print($"Manual: {Vec2.Transform(xy.ManualNormalize(), rotationMatrix)}");
+		Print();
+
+		Print($"RelativeMoveInput: {RelativeMoveInput}");
+	}
+
+#endif
+
+#endregion
 }
