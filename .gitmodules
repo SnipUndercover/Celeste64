@@ -1,0 +1,3 @@
+[submodule "external/Foster"]
+	path = external/Foster
+	url = git@github.com:SnipUndercover/Foster.git
