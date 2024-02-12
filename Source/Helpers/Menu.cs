@@ -94,6 +94,42 @@ public class Menu
 		}
 	}
 
+	public class MultiSelect(string label, List<string> options, Func<int> get, Action<int> set) : Item
+	{
+		private readonly List<string> options = options;
+		private readonly Action<int> set = set;
+		public override string Label => $"{label} : {options[get()]}";
+
+		public override void Slide(int dir) 
+		{
+			Audio.Play(Sfx.ui_select);
+
+			int index = get();
+			if (index < options.Count() - 1 && dir == 1)
+				index++;
+			if (index > 0 && dir == -1)
+				index--;
+			set(index);
+		}
+	}
+
+	public class MultiSelect<T> : MultiSelect where T : struct, Enum
+	{
+		private static List<string> GetEnumOptions()
+		{
+			var list = new List<string>();
+			foreach (var it in Enum.GetNames<T>())
+				list.Add(it);
+			return list;
+		}
+
+		public MultiSelect(string label, Action<T> set, Func<T> get)
+			: base(label, GetEnumOptions(), () => (int)(object)get(), (i) => set((T)(object)i))
+		{
+
+		}
+	}
+
 	public int Index;
 	public string Title = string.Empty;
 	public bool Focused = true;
@@ -194,7 +230,7 @@ public class Menu
 		{
 			CurrentMenu.HandleInput();
 
-	        if (Controls.Cancel.Pressed && !IsInMainMenu) 
+	        if (!IsInMainMenu && Controls.Cancel.ConsumePress()) 
 			{
 				Audio.Play(Sfx.main_menu_toggle_off);
 				submenus.Pop();
@@ -207,18 +243,17 @@ public class Menu
 		var font = Language.Current.SpriteFont;
 		var size = Size;
 		var position = Vec2.Zero;
-		batch.PushMatrix(-size / 2);
+		batch.PushMatrix(new Vec2(0, -size.Y / 2));
 	
 		if(!string.IsNullOrEmpty(Title)) 
 		{
-			var at = position + new Vec2(size.X / 2, 0);
 			var text = Title;
 			var justify = new Vec2(0.5f, 0);
 			var color = new Color(8421504);
 
 			batch.PushMatrix(
 				Matrix3x2.CreateScale(TitleScale) * 
-				Matrix3x2.CreateTranslation(at));
+				Matrix3x2.CreateTranslation(position));
 			UI.Text(batch, text, Vec2.Zero, justify, color);
 			batch.PopMatrix();
 
@@ -234,12 +269,11 @@ public class Menu
 				continue;
 			}
 	
-			var at = position + new Vec2(size.X / 2, 0);
 			var text = items[i].Label;
 			var justify = new Vec2(0.5f, 0);
 			var color = Index == i && Focused ? (Time.BetweenInterval(0.1f) ? 0x84FF54 : 0xFCFF59) : Color.White;
 			
-			UI.Text(batch, text, at, justify, color);
+			UI.Text(batch, text, position, justify, color);
 	
 			position.Y += font.LineHeight;
 			position.Y += Spacing;    
